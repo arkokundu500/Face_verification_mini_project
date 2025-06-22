@@ -1,4 +1,4 @@
-# Face Recognition Mini Project
+# SMART DOORBELL FACIAL VERIFICATION USING GENERATIVE ADVERSARIAL NETWORK
 
 A simple face recognition project using Python and popular machine learning libraries.
 
