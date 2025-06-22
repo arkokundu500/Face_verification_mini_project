@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Verification</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #45a049;
+            --danger: #f44336;
+            --danger-dark: #d32f2f;
+            --warning: #ff9800;
+            --info: #2196F3;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .content {
+            display: flex;
+            padding: 20px;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+        
+        .camera-section {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .result-section {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+        
+        #video-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        #video {
+            width: 100%;
+            background: #000;
+            border-radius: 8px;
+        }
+        
+        #canvas {
+            display: none;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: var(--danger-dark);
+        }
+        
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+        
+        .btn-info {
+            background: var(--info);
+            color: white;
+        }
+        
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(76, 175, 80, 0.05);
+        }
+        
+        .upload-area i {
+            font-size: 40px;
+            color: #777;
+            margin-bottom: 10px;
+        }
+        
+        .upload-area p {
+            color: #777;
+            margin: 0;
+        }
+        
+        #preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            margin: 15px auto;
+            display: none;
+        }
+        
+        .result-display {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .result-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+        
+        .result-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        
+        .verified .result-icon {
+            color: var(--primary);
+        }
+        
+        .not-verified .result-icon {
+            color: var(--danger);
+        }
+        
+        .result-text {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .confidence {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        
+        .confidence-level {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .high-confidence {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--primary);
+        }
+        
+        .medium-confidence {
+            background: rgba(255, 152, 0, 0.2);
+            color: var(--warning);
+        }
+        
+        .low-confidence {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--danger);
+        }
+        
+        .details {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 15px;
+            color: #777;
+            font-size: 14px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-door-closed"></i> Smart Doorbell Face Verification</h1>
+            <p>Real-time face recognition for secure access</p>
+        </header>
+        
+        <div class="content">
+            <div class="camera-section">
+                <h2 class="section-title"><i class="fas fa-camera"></i> Camera Capture</h2>
+                
+                <div id="video-container">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas" width="640" height="480"></canvas>
+                </div>
+                
+                <div class="controls">
+                    <button id="capture-btn" class="btn btn-primary">
+                        <i class="fas fa-camera"></i> Capture Image
+                    </button>
+                    <button id="reset-btn" class="btn btn-danger">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+                
+                <div class="upload-area" id="drop-zone">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Or drag & drop an image here</p>
+                    <input type="file" id="file-input" accept="image/*" style="display: none;">
+                </div>
+                
+                <img id="preview" alt="Captured Preview">
+                
+                <div class="controls">
+                    <button id="verify-btn" class="btn btn-primary" disabled>
+                        <i class="fas fa-check-circle"></i> Verify Identity
+                    </button>
+                </div>
+            </div>
+            
+            <div class="result-section">
+                <h2 class="section-title"><i class="fas fa-clipboard-check"></i> Verification Result</h2>
+                
+                <div class="result-display">
+                    <div id="result-placeholder">
+                        <div class="result-card">
+                            <div class="result-icon">
+                                <i class="fas fa-user-clock"></i>
+                            </div>
+                            <p>Capture an image or upload a photo to verify identity</p>
+                        </div>
+                    </div>
+                    
+                    <div id="result-content" class="hidden">
+                        <div class="result-card">
+                            <div class="result-icon" id="result-icon">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                            
+                            <div id="result-text" class="result-text"></div>
+                            
+                            <div class="confidence">
+                                Confidence: <span id="confidence-value">0</span>%
+                                <div id="confidence-level" class="confidence-level">Low</div>
+                            </div>
+                            
+                            <div class="details">
+                                <p>Raw Score: <span id="raw-score">0.00</span></p>
+                                <p id="face-detection-status">Face detected: Yes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Smart Doorbell System &copy; 2025 | Secure Access Verification | KGEC | Mini Project</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('capture-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const verifyBtn = document.getElementById('verify-btn');
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const preview = document.getElementById('preview');
+        const resultPlaceholder = document.getElementById('result-placeholder');
+        const resultContent = document.getElementById('result-content');
+        const resultIcon = document.getElementById('result-icon');
+        const resultText = document.getElementById('result-text');
+        const confidenceValue = document.getElementById('confidence-value');
+        const confidenceLevel = document.getElementById('confidence-level');
+        const rawScore = document.getElementById('raw-score');
+        const faceDetectionStatus = document.getElementById('face-detection-status');
+        
+        // State variables
+        let stream = null;
+        let capturedImage = null;
+        
+        // Initialize camera
+        async function initCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user' }, 
+                    audio: false 
+                });
+                video.srcObject = stream;
+                verifyBtn.disabled = true;
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                alert('Could not access camera. Please ensure you have a webcam connected and have granted permission.');
+                dropZone.style.cursor = 'pointer';
+                captureBtn.disabled = true;
+            }
+        }
+        
+        // Capture image from camera
+        function captureImage() {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert to data URL
+            capturedImage = canvas.toDataURL('image/jpeg');
+            preview.src = capturedImage;
+            preview.style.display = 'block';
+            
+            // Enable verify button
+            verifyBtn.disabled = false;
+            
+            // Hide placeholder, show result area
+            resultPlaceholder.classList.add('hidden');
+            resultContent.classList.remove('hidden');
+            
+            // Stop camera stream to save resources
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+        }
+        
+        // Reset camera
+        function resetCamera() {
+            preview.style.display = 'none';
+            capturedImage = null;
+            verifyBtn.disabled = true;
+            
+            // Reinitialize camera
+            if (!stream) {
+                initCamera();
+            }
+            
+            // Show placeholder
+            resultPlaceholder.classList.remove('hidden');
+            resultContent.classList.add('hidden');
+        }
+        
+        // Verify identity
+        function verifyIdentity() {
+            if (!capturedImage) {
+                alert('Please capture an image first');
+                return;
+            }
+            
+            // Show loading state
+            verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+            verifyBtn.disabled = true;
+            
+            // Send image to server
+            fetch('/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `canvas_data=${encodeURIComponent(capturedImage)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update UI with results
+                if (data.error) {
+                    resultText.textContent = `Error: ${data.error}`;
+                    resultText.style.color = 'var(--danger)';
+                } else {
+                    resultText.textContent = data.result;
+                    confidenceValue.textContent = data.confidence;
+                    rawScore.textContent = data.raw_score.toFixed(4);
+                    faceDetectionStatus.textContent = `Face detected: ${data.face_detected ? 'Yes' : 'No'}`;
+                    
+                    // Set confidence level
+                    confidenceLevel.className = 'confidence-level ';
+                    if (data.confidence_level === 'High') {
+                        confidenceLevel.classList.add('high-confidence');
+                        confidenceLevel.textContent = 'High';
+                    } else if (data.confidence_level === 'Medium') {
+                        confidenceLevel.classList.add('medium-confidence');
+                        confidenceLevel.textContent = 'Medium';
+                    } else {
+                        confidenceLevel.classList.add('low-confidence');
+                        confidenceLevel.textContent = 'Low';
+                    }
+                    
+                    // Set result styling
+                    if (data.result === "Verified Access") {
+                        resultText.style.color = 'var(--primary)';
+                        resultIcon.innerHTML = '<i class="fas fa-user-check"></i>';
+                        resultIcon.style.color = 'var(--primary)';
+                    } else {
+                        resultText.style.color = 'var(--danger)';
+                        resultIcon.innerHTML = '<i class="fas fa-user-slash"></i>';
+                        resultIcon.style.color = 'var(--danger)';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                resultText.textContent = `Error: ${error.message}`;
+                resultText.style.color = 'var(--danger)';
+            })
+            .finally(() => {
+                // Reset button state
+                verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> Verify Identity';
+                verifyBtn.disabled = false;
+            });
+        }
+        
+        // Handle file upload
+        function handleFileUpload(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                capturedImage = e.target.result;
+                preview.src = capturedImage;
+                preview.style.display = 'block';
+                verifyBtn.disabled = false;
+                
+                // Hide placeholder, show result area
+                resultPlaceholder.classList.add('hidden');
+                resultContent.classList.remove('hidden');
+                
+                // Stop camera if active
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Event Listeners
+        captureBtn.addEventListener('click', captureImage);
+        resetBtn.addEventListener('click', resetCamera);
+        verifyBtn.addEventListener('click', verifyIdentity);
+        
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--primary)';
+            dropZone.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = '#ccc';
+            dropZone.style.backgroundColor = '';
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#ccc';
+            dropZone.style.backgroundColor = '';
+            
+            if (e.dataTransfer.files.length > 0) {
+                handleFileUpload(e.dataTransfer.files[0]);
+            }
+        });
+        
+        // Initialize camera on load
+        document.addEventListener('DOMContentLoaded', initCamera);
+    </script>
+</body>
+</html>
